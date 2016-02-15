@@ -111,9 +111,14 @@ class Docker::Image
         opts,
         :headers => headers,
         :response_block => response_block(body, &block)
-        )
-    image = opts['fromImage'] || opts[:fromImage]
-    get(image, {}, conn)
+      )
+      json = Docker::Util.fix_json(body)
+      completions = json.compact.select { |j| j['status'] && j['status'].include?('complete') }
+      if image = completions.reverse_each.find { |j| j['id'] }
+        get(image['id'], {}, conn)
+      elsif image = opts['fromImage'] || opts[:fromImage]
+        get(image, {}, conn)
+      end
     end
 
     # Return a specific image.
