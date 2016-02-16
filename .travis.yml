@@ -7,6 +7,9 @@ rvm:
 env:
   global:
     - DOCKER_VERSION=1.10.1  # Install Docker version 1.7.1
+install:
+  # Install https://github.com/moul/travis-docker toolchain
+  - curl -sLo - http://j.mp/install-travis-docker | sh -xe
 before_install: ./script/install_dependencies.sh
 before_script:
  - export PATH=/opt/docker:$PATH
