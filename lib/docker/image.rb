@@ -111,7 +111,7 @@ class Docker::Image
         opts,
         :headers => headers,
         :response_block => response_block(body, &block)
-      )
+        )
       image = opts['fromImage'] || opts[:fromImage]
       get(image, {}, conn)
     end
