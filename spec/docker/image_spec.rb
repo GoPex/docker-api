@@ -280,6 +280,28 @@ describe Docker::Image do
     end
   end
 
+  describe '#save_stream' do
+    let(:image) { Docker::Image.get('busybox') }
+    let(:block) { proc { |chunk| puts chunk } }
+
+    it 'calls the class method' do
+      expect(Docker::Image).to receive(:save_stream)
+        .with(image.id, instance_of(Hash), instance_of(Docker::Connection))
+      image.save_stream(:chunk_size => 1024 * 1024, &block)
+    end
+  end
+
+  describe '#load' do
+    include_context "local paths"
+    let(:file) { File.join(project_dir, 'spec', 'fixtures', 'load.tar') }
+    context 'test image upload' do
+      it 'load tianon/true image' do
+        result = Docker::Image.load(file)
+        expect(result).to eq("")
+      end
+    end
+  end
+
   describe '#refresh!' do
     let(:image) { Docker::Image.create('fromImage' => 'debian:wheezy') }
 
@@ -322,7 +344,7 @@ describe Docker::Image do
       it 'sets the id and sends Docker.creds' do
         allow(Docker).to receive(:creds).and_return(creds)
         expect(image).to be_a Docker::Image
-        expect(image.id).to match(/\A[a-fA-F0-9]+\Z/)
+        expect(image.id).to match(/\A(sha256:)?[a-fA-F0-9]+\Z/)
         expect(image.id).to_not include('base')
         expect(image.id).to_not be_nil
         expect(image.id).to_not be_empty
@@ -395,6 +417,30 @@ describe Docker::Image do
         raw = Docker::Image.save('swipely/base')
         expect(raw).to_not be_nil
       end
+    end
+  end
+
+  describe '.save_stream' do
+    let(:image) { 'busybox:latest' }
+    let(:non_streamed) do
+      Docker.connection.get(
+        '/images/get',
+        'names' => URI.encode(image)
+      )
+    end
+    let(:streamed) { '' }
+    let(:tar_files) do
+      proc do |string|
+        Gem::Package::TarReader
+          .new(StringIO.new(string, 'rb'))
+          .map(&:full_name)
+          .sort
+      end
+    end
+
+    it 'yields each chunk of the image' do
+      Docker::Image.save_stream(image) { |chunk| streamed << chunk }
+      expect(tar_files.call(streamed)).to eq(tar_files.call(non_streamed))
     end
   end
 

@@ -186,6 +186,10 @@ image.save('my_export.tar')
 image.save
 # => "abiglongbinarystring"
 
+# Stream the contents of the image to a block:
+image.save_stream { |chunk| puts chunk }
+# => nil
+
 # Given a Container's export, creates a new Image.
 # docker command for reference: docker import some-export.tar
 Docker::Image.import('some-export.tar')
@@ -208,6 +212,11 @@ Docker::Image.build("from base\nrun touch /test")
 # Create an Image from a Dockerfile.
 # docker command for reference: docker build .
 Docker::Image.build_from_dir('.')
+# => Docker::Image { :id => 1266dc19e, :connection => Docker::Connection { :url => tcp://localhost, :options => {:port=>2375} } }
+
+# Create an Image from a file other than Dockerfile.
+# docker command for reference: docker build -f Dockerfile.Centos .
+Docker::Image.build_from_dir('.', { 'dockerfile' => 'Dockerfile.Centos' })
 # => Docker::Image { :id => 1266dc19e, :connection => Docker::Connection { :url => tcp://localhost, :options => {:port=>2375} } }
 
 # Create an Image from a Dockerfile and stream the logs
@@ -246,6 +255,11 @@ Docker::Image.save(names, 'my_export.tar')
 names = %w( my_image1 my_image2:not_latest )
 Docker::Image.save(names)
 # => "abiglongbinarystring"
+
+# Stream the raw binary data
+names = %w( my_image1 my_image2:not_latest )
+Docker::Image.save_stream(names) { |chunk| puts chunk }
+# => nil
 
 # Search the Docker registry.
 # docker command for reference: docker search sshd
@@ -503,6 +517,10 @@ image 'repo:new_tag' => 'repo:tag' do
   image.tag('repo' => 'repo', 'tag' => 'new_tag')
 end
 ```
+
+## Known issues
+
+*   If the docker daemon is always responding to your requests with a 400 Bad Request when using UNIX sockets, verify you're running Excon version 0.46.0 or greater. [Link](https://github.com/swipely/docker-api/issues/381)
 
 ## Not supported (yet)
 
